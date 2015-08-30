@@ -1,0 +1,84 @@
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    tools:context="ca.pmcgovern.cleanup.StartRoundActivity"
+        android:orientation="vertical"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+    android:weightSum="1">
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textAppearance="?android:attr/textAppearanceLarge"
+        android:text="Start a New Round"
+        android:id="@+id/title"
+        android:layout_weight="0.07" />
+
+    <LinearLayout
+        android:orientation="horizontal"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:paddingLeft="4.0dip"
+        android:paddingTop="5.0dip"
+        android:paddingRight="4.0dip"
+        android:paddingBottom="1.0dip"
+        android:layout_gravity="center_horizontal">
+
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Duration"
+            android:id="@+id/textView2"
+            android:layout_gravity="center_vertical" />
+
+        <Spinner
+            android:layout_width="103dp"
+            android:layout_height="wrap_content"
+            android:id="@+id/dayCount"
+            android:spinnerMode="dialog"
+            android:entries="@array/dayCounts"
+            android:prompt="@string/dayCountLabel"
+            android:layout_gravity="center_vertical"
+            />
+    </LinearLayout>
+
+    <CheckBox
+        android:layout_width="195dp"
+        android:layout_height="wrap_content"
+        android:text="Enable Reminders"
+        android:id="@+id/reminderEnable"
+        android:checked="true"
+        android:layout_weight="0.14"
+        android:layout_gravity="center_horizontal" />
+
+    <LinearLayout
+        android:orientation="horizontal"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:paddingLeft="4.0dip"
+        android:paddingTop="5.0dip"
+        android:paddingRight="4.0dip"
+        android:paddingBottom="1.0dip">
+
+        <Button
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Cancel"
+            android:id="@+id/cancelButton"
+            android:layout_gravity="center"
+            android:onClick="cancelToMain"
+            android:layout_weight="1.0" />
+
+        <Button
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="OK"
+            android:id="@+id/okButton"
+            android:layout_gravity="center"
+            android:onClick="toMain"
+            android:layout_weight="1.0" />
+    </LinearLayout>
+
+</LinearLayout>
+

@@ -1,0 +1,18 @@
+<resources>
+    <string name="app_name">cleanup</string>
+    <string name="hello_world">Hello world!</string>
+    <string name="action_settings">Settings</string>
+
+<!-- TODO: Remove or change this placeholder text -->
+    <string name="hello_blank_fragment">Hello blank fragment</string>
+    <string name="title_activity_help">HelpActivity</string>
+    <string name="title_activity_discard_item">DiscardItemActivity</string>
+    <string name="title_activity_start_round">StartRoundActivity</string>
+
+    <string name="dayCountLabel">Pick Duration</string>
+    <string-array name="dayCounts">
+        <item>7 Days</item>
+        <item>14 Days</item>
+        <item>21 Days</item>
+    </string-array>
+</resources>
