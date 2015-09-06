@@ -19,6 +19,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
 
+import com.github.mikephil.charting.charts.Chart;
 import com.github.mikephil.charting.data.BarData;
 import com.github.mikephil.charting.charts.CombinedChart;
 import com.github.mikephil.charting.charts.LineChart;
@@ -70,25 +71,23 @@ public class MainActivity extends ActionBarActivity implements DiscardItemFragme
             Log.i( TAG, "Current round:" + this.currentRound.getRoundId() );
         }
 
-        this.roundTotal = db.getDiscardedTotal( this.currentRound.getRoundId() );
-       // SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getBaseContext());
-
 
         this.chart = (CombinedChart)findViewById( R.id.chart);
+        this.chart.setTouchEnabled( false );
+        this.chart.setBackgroundColor( Color.BLACK );
         //LineChart chart = (LineChart) findViewById(R.id.chart);
 
 //        int count = 21;
         initChart();
 
 
-        // Set initial interface
-        //final int roundState = prefs.getInt(Constants.ROUND_STATE, Constants.ROUND_STATE_NEW);
-
-
         Round.Status roundState = Round.Status.NEW;
 
         if( this.currentRound != null ) {
-            roundState = this.currentRound.getStatus();
+
+            this.roundTotal = this.db.getDiscardedTotal(this.currentRound.getRoundId());
+
+           roundState = this.currentRound.getStatus();
         }
 
         setupFragments( roundState );
@@ -101,11 +100,13 @@ public class MainActivity extends ActionBarActivity implements DiscardItemFragme
     public int getDiscardedTotal() {
         return this.roundTotal;
     }
+
+
     private void initChart() {
 
         chart.setDescription("");
         chart.setBackgroundColor(Color.WHITE);
-        chart.setDrawGridBackground(false);
+        chart.setDrawGridBackground(true);
         chart.setDrawBarShadow(false);
 
         // draw bars behind lines
@@ -121,10 +122,6 @@ public class MainActivity extends ActionBarActivity implements DiscardItemFragme
         rightAxis.setValueFormatter(intFormat);
         leftAxis.setValueFormatter(intFormat);
 
-        rightAxis.setAxisMaxValue(this.currentRound == null ? Constants.DEFAULT_DAY_COUNT : this.currentRound.getDurationDays());
-        leftAxis.setAxisMaxValue(this.currentRound == null ? Constants.DEFAULT_DAY_COUNT : this.currentRound.getDurationDays());
-
-
 
         XAxis xAxis = chart.getXAxis();
         xAxis.setPosition(XAxis.XAxisPosition.BOTTOM);
@@ -136,19 +133,38 @@ public class MainActivity extends ActionBarActivity implements DiscardItemFragme
         for( int i = 0; i < maxXVal; i++ ) {
             xVals[i] = "Day "+ Integer.toString( i+1 );
         }
-Log.i( TAG, "X value length: " + xVals.length );
+Log.i(TAG, "X value length: " + xVals.length);
         CombinedData data = new CombinedData( xVals );
 
-        data.setData( generateQuotaData() );
+        data.setData(generateQuotaData());
 
         BarData discardedItemData = generateBarData( this.currentRound );
 
+        // Add 1 unit for headroom
+        int maxYValue = 1 + (this.currentRound == null ? Constants.DEFAULT_DAY_COUNT : this.currentRound.getDurationDays());
+
         if( discardedItemData != null ) {
+
+
+            BarDataSet s = discardedItemData.getDataSetByIndex( 0 );//tDataSets().get(0);
+            Log.i( TAG, "MAX HEIGHT:" + Float.toString( s.getYMax() ));
+
+            // Add 1 unit for headroom
+            maxYValue = 1 + (int)Math.floor( Math.max( maxYValue, s.getYMax() ));
+
             data.setData( discardedItemData );
         }
 
-        chart.setData(data);
-        chart.invalidate();
+
+     //   Paint mValuPaint = chart.getPaint(Chart.PAINT_VALUES);
+
+
+        rightAxis.setAxisMaxValue(maxYValue );
+        leftAxis.setAxisMaxValue(maxYValue);
+        this.chart.setDrawValueAboveBar(false);
+        this.chart.setData(data);
+
+        this.chart.invalidate();
     }
 
 
@@ -174,7 +190,7 @@ Log.i( TAG, "X value length: " + xVals.length );
         }
 Log.i( TAG, "Quota data length:" + entries.size() );
         LineDataSet set = new LineDataSet(entries, "Quota");
-        set.setColor(Color.rgb(240, 0, 0 ));
+        set.setColor(Color.rgb(240, 0, 0));
         set.setLineWidth(2.5f);
         set.setDrawCircles(false);
         set.setDrawValues(false);
@@ -205,6 +221,7 @@ Log.i( TAG, "CDB: " + countByDate );
 
         ArrayList<BarEntry> entries = new ArrayList<BarEntry>();
 
+
         for( Map.Entry<Integer,Integer> kv : countByDate.entrySet() ) {
             Log.i( TAG, "Discard: " + kv.getKey() + " -> " + kv.getValue() );
             // Value, x-axis
@@ -216,6 +233,12 @@ Log.i( TAG, "CDB: " + countByDate );
         set.setValueTextColor(Color.rgb(60, 220, 78));
         set.setValueTextSize(10f);
         d.addDataSet(set);
+
+
+        ValueFormatter intFormat = new IntegerValueFormatter();
+
+
+        d.setValueFormatter( new IntegerValueFormatter() );
 
         set.setAxisDependency(YAxis.AxisDependency.LEFT);
 

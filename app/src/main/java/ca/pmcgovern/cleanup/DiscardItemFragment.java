@@ -66,20 +66,10 @@ public class DiscardItemFragment extends Fragment {
 
         t = (TextView)view.findViewById( R.id.totals );
 
-        t.setText( "Round: " + discardedTotal + " / " + 999 );
-/**
-        t = (TextView)view.findViewById( R.id.quotaStatus );
+        int roundDuration = currentRound.getDurationDays();
+        long roundTargetItems = ( roundDuration * (  roundDuration + 1 ))/2;
 
-        if( discardedToday < daysElapsed  ) {
-            t.setText( daysElapsed - discardedToday + " items to go" );
-        } else if( discardedToday == daysElapsed ) {
-            t.setText( "Today's quota met." );
-        } else {
-            t.setText( "Over Quota!");
-        }
-**/
-
-      //  ((TextView)getView().findViewById( R.id.todaysQuota  )).setText( Integer.toString( count ));
+        t.setText( "Round: " + discardedTotal + " / " + roundTargetItems );
     }
 
     public void toggleUndo( View parentView, int itemCount ) {
