@@ -2,6 +2,7 @@ package ca.pmcgovern.cleanup;
 
 import android.app.AlertDialog;
 import android.database.sqlite.SQLiteDatabase;
+import android.graphics.Paint;
 import android.os.AsyncTask;
 import android.support.v4.app.Fragment;
 import android.content.DialogInterface;
@@ -16,27 +17,20 @@ import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
-import android.view.ViewGroup;
 import android.widget.TextView;
 
 import com.github.mikephil.charting.charts.Chart;
-import com.github.mikephil.charting.data.BarData;
-import com.github.mikephil.charting.charts.CombinedChart;
 import com.github.mikephil.charting.charts.LineChart;
 import com.github.mikephil.charting.components.XAxis;
 import com.github.mikephil.charting.components.YAxis;
-import com.github.mikephil.charting.data.BarDataSet;
-import com.github.mikephil.charting.data.BarEntry;
-import com.github.mikephil.charting.data.CombinedData;
+
 import com.github.mikephil.charting.data.Entry;
 import com.github.mikephil.charting.data.LineData;
 import com.github.mikephil.charting.data.LineDataSet;
-import com.github.mikephil.charting.charts.CombinedChart.DrawOrder;
+
 import com.github.mikephil.charting.utils.ValueFormatter;
 
 import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
@@ -44,13 +38,14 @@ import ca.pmcgovern.cleanup.model.DBHelper;
 import ca.pmcgovern.cleanup.model.DiscardEvent;
 import ca.pmcgovern.cleanup.model.Round;
 import ca.pmcgovern.cleanup.util.IntegerValueFormatter;
-import ca.pmcgovern.cleanup.util.Prefs;
+
 
 public class MainActivity extends ActionBarActivity implements DiscardItemFragment.RoundProvider, GetStartedFragment.Derp, ResumeRoundFragment.ResumeFragmentHandler {
 
     public static final String TAG = "Main";
 
-    private CombinedChart chart;
+   // private CombinedChart chart;
+    private LineChart chart;
     private Round currentRound;
     private DBHelper db;
     private int roundTotal;
@@ -68,11 +63,11 @@ public class MainActivity extends ActionBarActivity implements DiscardItemFragme
         if( this.currentRound == null ) {
             Log.i( TAG, "No round found.");
         } else {
-            Log.i( TAG, "Current round:" + this.currentRound.getRoundId() );
+            Log.i(TAG, "Current round:" + this.currentRound.getRoundId());
         }
 
 
-        this.chart = (CombinedChart)findViewById( R.id.chart);
+        this.chart = (LineChart)findViewById( R.id.chart);
         this.chart.setTouchEnabled( false );
         this.chart.setBackgroundColor( Color.BLACK );
         //LineChart chart = (LineChart) findViewById(R.id.chart);
@@ -107,20 +102,15 @@ public class MainActivity extends ActionBarActivity implements DiscardItemFragme
         chart.setDescription("");
         chart.setBackgroundColor(Color.WHITE);
         chart.setDrawGridBackground(true);
-        chart.setDrawBarShadow(false);
 
-        // draw bars behind lines
-        chart.setDrawOrder(new DrawOrder[] {
-                DrawOrder.BAR, DrawOrder.BUBBLE, DrawOrder.CANDLE, DrawOrder.LINE, DrawOrder.SCATTER
-        });
 
         YAxis rightAxis = chart.getAxisRight();
         YAxis leftAxis = chart.getAxisLeft();
 
         ValueFormatter intFormat = new IntegerValueFormatter();
 
-        rightAxis.setValueFormatter(intFormat);
-        leftAxis.setValueFormatter(intFormat);
+        rightAxis.setValueFormatter( intFormat );
+        leftAxis.setValueFormatter( intFormat );
 
 
         XAxis xAxis = chart.getXAxis();
@@ -128,41 +118,33 @@ public class MainActivity extends ActionBarActivity implements DiscardItemFragme
 
         int maxXVal = this.currentRound == null ? Constants.DEFAULT_DAY_COUNT: this.currentRound.getDurationDays();
 
-        String[] xVals = new String[maxXVal];
+        String[] xVals = new String[ maxXVal ];
 
         for( int i = 0; i < maxXVal; i++ ) {
             xVals[i] = "Day "+ Integer.toString( i+1 );
         }
-Log.i(TAG, "X value length: " + xVals.length);
-        CombinedData data = new CombinedData( xVals );
 
-        data.setData(generateQuotaData());
-
-        BarData discardedItemData = generateBarData( this.currentRound );
-
-        // Add 1 unit for headroom
-        int maxYValue = 1 + (this.currentRound == null ? Constants.DEFAULT_DAY_COUNT : this.currentRound.getDurationDays());
-
-        if( discardedItemData != null ) {
+        Log.i( TAG, "X value length: " + xVals.length );
 
 
-            BarDataSet s = discardedItemData.getDataSetByIndex( 0 );//tDataSets().get(0);
-            Log.i( TAG, "MAX HEIGHT:" + Float.toString( s.getYMax() ));
+        ArrayList<LineDataSet> dataSets = new ArrayList<>();
+        dataSets.add( generateQuotaData() );
 
-            // Add 1 unit for headroom
-            maxYValue = 1 + (int)Math.floor( Math.max( maxYValue, s.getYMax() ));
 
-            data.setData( discardedItemData );
+        if( this.currentRound != null ) {
+
+            LineDataSet discarded = this.generateDiscardedData( this.currentRound );
+
+            if( discarded != null ) {
+                dataSets.add(generateDiscardedData(this.currentRound));
+            }
         }
 
-
-     //   Paint mValuPaint = chart.getPaint(Chart.PAINT_VALUES);
-
-
-        rightAxis.setAxisMaxValue(maxYValue );
-        leftAxis.setAxisMaxValue(maxYValue);
-        this.chart.setDrawValueAboveBar(false);
-        this.chart.setData(data);
+        LineData data = new LineData( xVals, dataSets );
+        this.chart.setBackgroundColor(Color.rgb(238,238,238));
+        Paint bgPaint = this.chart.getPaint( Chart.PAINT_GRID_BACKGROUND );
+        bgPaint.setColor( Color.rgb( 200, 200, 200 ));
+        this.chart.setData( data );
 
         this.chart.invalidate();
     }
@@ -174,7 +156,7 @@ Log.i(TAG, "X value length: " + xVals.length);
      * Geometric progression
      * @return
      */
-    private LineData generateQuotaData() {
+    private LineDataSet generateQuotaData() {
 
         int roundDuration = Constants.DEFAULT_DAY_COUNT;
 
@@ -188,21 +170,22 @@ Log.i(TAG, "X value length: " + xVals.length);
         for (int day = 0; day < roundDuration; day++) {
             entries.add( new Entry( day + 1, day ));
         }
-Log.i( TAG, "Quota data length:" + entries.size() );
-        LineDataSet set = new LineDataSet(entries, "Quota");
-        set.setColor(Color.rgb(240, 0, 0));
-        set.setLineWidth(2.5f);
-        set.setDrawCircles(false);
-        set.setDrawValues(false);
-        set.setAxisDependency(YAxis.AxisDependency.LEFT);
 
-        LineData d = new LineData();
-        d.addDataSet(set);
+        LineDataSet quotaDataSet = new LineDataSet(entries, "Quota");
+        quotaDataSet.setColor(Color.rgb(240, 0, 0));
+        quotaDataSet.setLineWidth(1);
 
-        return d;
+        quotaDataSet.setDrawCircles(false);
+        quotaDataSet.setDrawValues(false);
+        quotaDataSet.setAxisDependency(YAxis.AxisDependency.LEFT);
+        quotaDataSet.enableDashedLine(10, 10, 0);
+
+        return quotaDataSet;
     }
 
-    private BarData generateBarData( Round round ) {
+
+
+    private LineDataSet generateDiscardedData( Round round ) {
 
         if( round == null ) {
             return null;
@@ -210,40 +193,31 @@ Log.i( TAG, "Quota data length:" + entries.size() );
 
         Map<Integer,Integer> countByDate = this.db.getDiscardEventCountByDay( round );
 
-
-//SELECT cast(julianday(datetime( d.date / 1000, 'unixepoch', 'localtime' )) - julianday( datetime( r.start_date / 1000, 'unixepoch', 'localtime' )) AS INTEGER) AS round_day, COUNT(*) count FROM  discard_event d INNER JOIN cleanup_round  r  ON r.id=10 AND d.round_id=r.id GROUP BY round_day
-Log.i( TAG, "CDB: " + countByDate );
         if( countByDate == null || countByDate.isEmpty() ) {
             return null;
         }
 
-        BarData d = new BarData();
-
-        ArrayList<BarEntry> entries = new ArrayList<BarEntry>();
-
+        ArrayList<Entry> entries = new ArrayList<>();
 
         for( Map.Entry<Integer,Integer> kv : countByDate.entrySet() ) {
-            Log.i( TAG, "Discard: " + kv.getKey() + " -> " + kv.getValue() );
-            // Value, x-axis
-            entries.add( new BarEntry( kv.getValue(), kv.getKey()) );
+
+            Log.i(TAG, "Discard: " + kv.getKey() + " -> " + kv.getValue());
+            entries.add( new Entry( kv.getValue(), kv.getKey()) ); // Value, x-axis
         }
 
-        BarDataSet set = new BarDataSet(entries, "Discarded Items");
-        set.setColor(Color.rgb(60, 220, 78));
-        set.setValueTextColor(Color.rgb(60, 220, 78));
-        set.setValueTextSize(10f);
-        d.addDataSet(set);
+        LineDataSet discardedDataSet = new LineDataSet(entries, "Discarded");
+        discardedDataSet.setColor(Color.rgb(60, 200, 255));
+        discardedDataSet.setLineWidth(2);
+        discardedDataSet.setAxisDependency(YAxis.AxisDependency.LEFT);
+        discardedDataSet.setCircleColor(Color.rgb(60, 200, 255));
+        discardedDataSet.setCircleSize(5);
+        discardedDataSet.setDrawCircleHole( false );
+        discardedDataSet.setValueFormatter(new IntegerValueFormatter());
 
-
-        ValueFormatter intFormat = new IntegerValueFormatter();
-
-
-        d.setValueFormatter( new IntegerValueFormatter() );
-
-        set.setAxisDependency(YAxis.AxisDependency.LEFT);
-
-        return d;
+        return discardedDataSet;
     }
+
+
 
     private void setupFragments( Round.Status roundState ) {
 
@@ -350,10 +324,10 @@ Log.i( TAG, "CDB: " + countByDate );
             throw new IllegalStateException( "Current round is null." );
         }
 
-        this.currentRound.setStatus( Round.Status.IN_PROGRESS );
+        this.currentRound.setStatus(Round.Status.IN_PROGRESS);
         DBHelper db = new DBHelper( this );
 
-        db.updateRound( this.currentRound );
+        db.updateRound(this.currentRound);
 
         invalidateOptionsMenu();
 
