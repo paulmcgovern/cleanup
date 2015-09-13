@@ -21,10 +21,6 @@ import ca.pmcgovern.cleanup.model.Round;
 
 public class DiscardItemFragment extends Fragment {
 
-    public DiscardItemFragment() {
-    }
-
-  //  TextView today
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
@@ -32,7 +28,7 @@ public class DiscardItemFragment extends Fragment {
         LayoutInflater lf = getActivity().getLayoutInflater();
         View view =  lf.inflate( R.layout.fragment_discard_item, container, false);
 
-      //  updateCount( view );
+
         // need to initialize with current count.
         updateCount( view, this.roundProvider.getDiscardedTodayCount(), this.roundProvider.getDiscardedTotal());
 
@@ -91,7 +87,8 @@ public class DiscardItemFragment extends Fragment {
         public int getDiscardedTodayCount();
         public int getDiscardedTotal();
     }
-    private RoundProvider roundProvider;
+
+    protected RoundProvider roundProvider;
 
     @Override
     public void onAttach( Activity activity ) {

@@ -22,22 +22,4 @@ public class GetStartedFragment extends Fragment {
         return inflater.inflate(R.layout.fragment_get_started, container, false);
     }
 
-
-
-
-   // public void  toStartRound( View view ) {
-   //     this.parentViewDerp.doDerp();
-   // }
-
-    public interface Derp {
-        public void doDerp();
-    }
-
-    private Derp parentViewDerp;
-
-    @Override
-    public void onAttach( Activity activity ) {
-        super.onAttach(activity);
-        this.parentViewDerp = (Derp)activity;
-    }
 }

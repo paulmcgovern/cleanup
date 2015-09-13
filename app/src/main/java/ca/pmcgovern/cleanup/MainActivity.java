@@ -30,6 +30,8 @@ import com.github.mikephil.charting.data.LineDataSet;
 
 import com.github.mikephil.charting.utils.ValueFormatter;
 
+import net.danlew.android.joda.JodaTimeAndroid;
+
 import java.util.ArrayList;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -40,11 +42,10 @@ import ca.pmcgovern.cleanup.model.Round;
 import ca.pmcgovern.cleanup.util.IntegerValueFormatter;
 
 
-public class MainActivity extends ActionBarActivity implements DiscardItemFragment.RoundProvider, GetStartedFragment.Derp, ResumeRoundFragment.ResumeFragmentHandler {
+public class MainActivity extends ActionBarActivity implements DiscardItemFragment.RoundProvider {
 
     public static final String TAG = "Main";
 
-   // private CombinedChart chart;
     private LineChart chart;
     private Round currentRound;
     private DBHelper db;
@@ -55,6 +56,7 @@ public class MainActivity extends ActionBarActivity implements DiscardItemFragme
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+        JodaTimeAndroid.init(this);
 
         this.db = new DBHelper( this );
 
@@ -83,6 +85,8 @@ public class MainActivity extends ActionBarActivity implements DiscardItemFragme
             this.roundTotal = this.db.getDiscardedTotal(this.currentRound.getRoundId());
 
            roundState = this.currentRound.getStatus();
+
+            Log.i(TAG, "ROUND COMPLETE: " + (this.currentRound.getStatus() == Round.Status.DONE));
         }
 
         setupFragments( roundState );
@@ -121,10 +125,10 @@ public class MainActivity extends ActionBarActivity implements DiscardItemFragme
         String[] xVals = new String[ maxXVal ];
 
         for( int i = 0; i < maxXVal; i++ ) {
-            xVals[i] = "Day "+ Integer.toString( i+1 );
+            xVals[i] = "Day "+ Integer.toString( i+1);
         }
 
-        Log.i( TAG, "X value length: " + xVals.length );
+        Log.i(TAG, "X value length: " + xVals.length );
 
 
         ArrayList<LineDataSet> dataSets = new ArrayList<>();
@@ -142,7 +146,7 @@ public class MainActivity extends ActionBarActivity implements DiscardItemFragme
 
         LineData data = new LineData( xVals, dataSets );
         this.chart.setBackgroundColor(Color.rgb(238,238,238));
-        Paint bgPaint = this.chart.getPaint( Chart.PAINT_GRID_BACKGROUND );
+        Paint bgPaint = this.chart.getPaint(Chart.PAINT_GRID_BACKGROUND );
         bgPaint.setColor( Color.rgb( 200, 200, 200 ));
         this.chart.setData( data );
 
@@ -166,7 +170,7 @@ public class MainActivity extends ActionBarActivity implements DiscardItemFragme
 
         ArrayList<Entry> entries = new ArrayList<Entry>();
 
-        Log.i( TAG, "Generating quota data for " + roundDuration + " days" );
+        Log.i(TAG, "Generating quota data for " + roundDuration + " days");
         for (int day = 0; day < roundDuration; day++) {
             entries.add( new Entry( day + 1, day ));
         }
@@ -211,7 +215,7 @@ public class MainActivity extends ActionBarActivity implements DiscardItemFragme
         discardedDataSet.setAxisDependency(YAxis.AxisDependency.LEFT);
         discardedDataSet.setCircleColor(Color.rgb(60, 200, 255));
         discardedDataSet.setCircleSize(5);
-        discardedDataSet.setDrawCircleHole( false );
+        discardedDataSet.setDrawCircleHole(false);
         discardedDataSet.setValueFormatter(new IntegerValueFormatter());
 
         return discardedDataSet;
@@ -229,11 +233,8 @@ public class MainActivity extends ActionBarActivity implements DiscardItemFragme
             newFragment = new GetStartedFragment();
         } else if( roundState == Round.Status.IN_PROGRESS ) {
             newFragment = new DiscardItemFragment();
-        } else if( roundState == Round.Status.SUSPENDED ) {
-            newFragment = new ResumeRoundFragment();
-
         } else if( roundState ==  Round.Status.DONE ) {
-            // TODO: done case
+            newFragment = new DoneRoundFragment();
         }
         if( newFragment == null ) {
             throw new IllegalArgumentException( "Unknown round state");
@@ -251,13 +252,8 @@ public class MainActivity extends ActionBarActivity implements DiscardItemFragme
         // Inflate the menu; this adds items to the action bar if it is present.
         getMenuInflater().inflate(R.menu.menu_main, menu);
 
-       // SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getBaseContext());
-
-
         // If a round is not in progress
         // hide the option to stop thr round.
-
-       // int roundState = prefs.getInt( Constants.ROUND_STATE, Constants.ROUND_STATE_NEW );
 
         Round.Status roundState = null;
 
@@ -270,19 +266,16 @@ public class MainActivity extends ActionBarActivity implements DiscardItemFragme
         if( roundState == Round.Status.NEW ) {
 
             menu.findItem( R.id.action_stop ).setVisible( false );
-            menu.findItem( R.id.action_resume ).setVisible( false );
             menu.findItem( R.id.action_clear ).setVisible(false);
 
         } else if ( roundState == Round.Status.IN_PROGRESS ) {
 
             menu.findItem( R.id.action_stop ).setVisible( true );
-            menu.findItem( R.id.action_resume ).setVisible( false );
             menu.findItem( R.id.action_clear ).setVisible(true);
 
-        } else if( roundState == Round.Status.SUSPENDED ) {
+        } else if( roundState == Round.Status.DONE ) {
 
             menu.findItem( R.id.action_stop ).setVisible( false );
-       //     menu.findItem( R.id.action_resume ).setVisible( true );
             menu.findItem( R.id.action_clear ).setVisible(true);
         }
 
@@ -309,34 +302,11 @@ public class MainActivity extends ActionBarActivity implements DiscardItemFragme
         } else if( id == R.id.action_clear ) {
             clearAllAlert();
             return true;
-        } else if( id == R.id.action_resume ) {
-            resumeRoundAlert();
-            return true;
         }
 
         return super.onOptionsItemSelected(item);
     }
 
-
-    public void resumeRound() {
-
-        if( this.currentRound == null ) {
-            throw new IllegalStateException( "Current round is null." );
-        }
-
-        this.currentRound.setStatus(Round.Status.IN_PROGRESS);
-        DBHelper db = new DBHelper( this );
-
-        db.updateRound(this.currentRound);
-
-        invalidateOptionsMenu();
-
-        FragmentTransaction ft = getSupportFragmentManager().beginTransaction();
-        ft.replace(R.id.your_placeholder, new DiscardItemFragment() );
-        ft.commit();
-
-        updateStatusText( Round.Status.IN_PROGRESS );
-    }
 
     /**
      * Halt the current round.
@@ -350,18 +320,18 @@ public class MainActivity extends ActionBarActivity implements DiscardItemFragme
             throw new IllegalStateException( "Current round is null");
         }
 
-        this.currentRound.setStatus(Round.Status.SUSPENDED);
-
+        //this.currentRound.setStatus(Round.Status.SUSPENDED);
+        this.currentRound.setStatus(Round.Status.DONE);
         //DBHelper db = new DBHelper( this );
         this.db.updateRound( this.currentRound );
 
         invalidateOptionsMenu();
 
         FragmentTransaction ft = getSupportFragmentManager().beginTransaction();
-        ft.replace(R.id.your_placeholder, new ResumeRoundFragment() );
+        ft.replace(R.id.your_placeholder, new DoneRoundFragment() );
         ft.commit();
 
-        updateStatusText( Round.Status.SUSPENDED );
+        updateStatusText( Round.Status.DONE );
     }
 
     public void clearAll() {
@@ -429,10 +399,11 @@ public class MainActivity extends ActionBarActivity implements DiscardItemFragme
 
 
 
-        } else if ( roundState == Round.Status.SUSPENDED ) {
-
-            statusText.setText( "Current round suspended on day " + daysElapsed +" of " + roundDuration );
-
+  //      } //else if ( roundState == Round.Status.SUSPENDED ) {
+//
+ //           statusText.setText("Current round suspended on day " + daysElapsed + " of " + roundDuration);
+        } else if ( roundState == Round.Status.DONE ) {
+            statusText.setText( "Round Finished");
         } else {
 
             throw new IllegalArgumentException( "Unknown round state:" + roundState );
@@ -469,33 +440,6 @@ public class MainActivity extends ActionBarActivity implements DiscardItemFragme
         AlertDialog alertDialog = alertDialogBuilder.create();
         alertDialog.show();
     }
-
-
-    public void resumeRoundAlert() {
-
-        AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder( this );
-        alertDialogBuilder.setTitle( "Resume Current Round" );
-
-        alertDialogBuilder
-                .setMessage("Resume the current round?")
-                .setCancelable(false)
-                .setPositiveButton("Yes",new DialogInterface.OnClickListener() {
-                    public void onClick(DialogInterface dialog,int id) {
-                        MainActivity.this.resumeRound();
-                    }
-                })
-                .setNegativeButton("No",new DialogInterface.OnClickListener() {
-                    public void onClick(DialogInterface dialog,int id) {
-                        dialog.cancel();
-                    }
-                });
-
-
-        AlertDialog alertDialog = alertDialogBuilder.create();
-        alertDialog.show();
-    }
-
-
 
 
 
@@ -539,11 +483,6 @@ public class MainActivity extends ActionBarActivity implements DiscardItemFragme
         startActivity(intent);
     }
 
-    public void resumeRound( View view ) {
-        resumeRoundAlert();
-    }
-
-
     /**
      * Handler for "Discard Item" button
      * @param view
@@ -577,17 +516,6 @@ public class MainActivity extends ActionBarActivity implements DiscardItemFragme
             throw new IllegalStateException( "Current round is null." );
         }
         new DiscardItemTask().execute( false );
-    }
-
-    @Override
-    public void doDerp() {
-        Log.i( "XXX", "Derping....");
-       // toStartRound();
-    }
-
-    @Override
-    public void doResume() {
-        Log.i( "XXXX", "do resume..." );
     }
 
 

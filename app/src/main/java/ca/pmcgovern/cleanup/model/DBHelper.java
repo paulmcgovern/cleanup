@@ -7,6 +7,9 @@ import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
 import android.util.Log;
 
+import org.joda.time.DateTime;
+import org.joda.time.Days;
+
 import java.util.Calendar;
 import java.util.Date;
 import java.util.LinkedHashMap;
@@ -101,12 +104,20 @@ public class DBHelper extends SQLiteOpenHelper {
 
 
         if( c.getCount() >= 1 &&  c.moveToFirst() ) {
-            r.setRoundId( c.getInt( 0 ));
-            r.setStartDate( c.getLong( 1 ));
-            r.setDurationDays( c.getInt( 2 ));
-            r.setStatus( Round.Status.valueOf( c.getString( 3 )));
+            r.setRoundId(c.getInt(0));
+            r.setStartDate(c.getLong(1));
+            r.setDurationDays(c.getInt(2));
+            //r.setStatus( Round.Status.valueOf( c.getString( 3 )));
+
+            if( isDone( r.getStartDate(), r.getDurationDays() )) {
+                r.setStatus( Round.Status.DONE );
+            } else {
+                r.setStatus( Round.Status.valueOf( c.getString( 3 )));
+            }
+
             r.setSendReminders( c.getInt( 4 ) == 1 );
             r.setName( c.getString( 5 ));
+
 
             if( !c.isClosed() ) {
                 c.close();
@@ -115,6 +126,19 @@ public class DBHelper extends SQLiteOpenHelper {
             return null;
         }
         return r;
+    }
+
+    private boolean isDone(long startDate, int durationDays) {
+
+        DateTime start = new DateTime( startDate );
+        DateTime now   = new DateTime( System.currentTimeMillis() );
+
+        int days = Days.daysBetween(start, now).getDays();
+
+        Log.i(TAG, "Delta days: " + days + " duration:" + durationDays );
+
+        return days > durationDays;
+
     }
 
     public void saveDiscardEvent( DiscardEvent de ) {
