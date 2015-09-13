@@ -7,8 +7,6 @@
         android:orderInCategory="200" app:showAsAction="never" />
     <item android:id="@+id/action_stop" android:title="Stop Round"
         android:orderInCategory="200" app:showAsAction="never" />
-    <item android:id="@+id/action_resume" android:title="Resume Round"
-        android:orderInCategory="200" app:showAsAction="never" />
     <item android:id="@+id/action_clear" android:title="Clear All"
         android:orderInCategory="200" app:showAsAction="never" />
 </menu>

@@ -1,5 +1,13 @@
 package ca.pmcgovern.cleanup.model;
 
+import android.util.Log;
+
+import org.joda.time.DateTime;
+import org.joda.time.Days;
+
+import java.util.Calendar;
+import java.util.Date;
+
 import ca.pmcgovern.cleanup.Constants;
 
 /**
@@ -7,7 +15,7 @@ import ca.pmcgovern.cleanup.Constants;
  */
 public class Round {
 
-    public enum Status { NEW, IN_PROGRESS, SUSPENDED, DONE };
+    public enum Status { NEW, IN_PROGRESS, DONE };
 
     private int roundId;
     private String name;
@@ -63,4 +71,6 @@ public class Round {
     public void setDurationDays(int durationDays) {
         this.durationDays = durationDays;
     }
+
+
 }
