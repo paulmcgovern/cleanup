@@ -48,6 +48,10 @@
                 android:name="android.support.PARENT_ACTIVITY"
                 android:value="ca.pmcgovern.cleanup.MainActivity" />
         </activity>
+        <service android:name="ca.pmcgovern.cleanup.services.NotificationService" />
+        <receiver android:name="ca.pmcgovern.cleanup.receiver.AlarmReceiver" />
+
     </application>
 
+        
 </manifest>

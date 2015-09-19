@@ -1,7 +1,10 @@
 package ca.pmcgovern.cleanup;
 
+import android.app.AlarmManager;
 import android.app.AlertDialog;
-import android.database.sqlite.SQLiteDatabase;
+import android.app.NotificationManager;
+import android.app.PendingIntent;
+import android.content.Context;
 import android.graphics.Paint;
 import android.os.AsyncTask;
 import android.support.v4.app.Fragment;
@@ -11,6 +14,7 @@ import android.content.SharedPreferences;
 import android.graphics.Color;
 import android.preference.PreferenceManager;
 import android.support.v4.app.FragmentTransaction;
+import android.support.v4.app.NotificationCompat;
 import android.support.v7.app.ActionBarActivity;
 import android.os.Bundle;
 import android.util.Log;
@@ -33,9 +37,13 @@ import com.github.mikephil.charting.utils.ValueFormatter;
 import net.danlew.android.joda.JodaTimeAndroid;
 
 import java.util.ArrayList;
-import java.util.Map;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 
+import ca.pmcgovern.cleanup.receiver.AlarmReceiver;
 import ca.pmcgovern.cleanup.model.DBHelper;
 import ca.pmcgovern.cleanup.model.DiscardEvent;
 import ca.pmcgovern.cleanup.model.Round;
@@ -96,6 +104,7 @@ public class MainActivity extends ActionBarActivity implements DiscardItemFragme
     }
 
 
+
     public int getDiscardedTotal() {
         return this.roundTotal;
     }
@@ -132,7 +141,7 @@ public class MainActivity extends ActionBarActivity implements DiscardItemFragme
 
 
         ArrayList<LineDataSet> dataSets = new ArrayList<>();
-        dataSets.add( generateQuotaData() );
+        dataSets.add(generateQuotaData());
 
 
         if( this.currentRound != null ) {
@@ -145,10 +154,10 @@ public class MainActivity extends ActionBarActivity implements DiscardItemFragme
         }
 
         LineData data = new LineData( xVals, dataSets );
-        this.chart.setBackgroundColor(Color.rgb(238,238,238));
+        this.chart.setBackgroundColor(Color.rgb(238, 238, 238));
         Paint bgPaint = this.chart.getPaint(Chart.PAINT_GRID_BACKGROUND );
-        bgPaint.setColor( Color.rgb( 200, 200, 200 ));
-        this.chart.setData( data );
+        bgPaint.setColor(Color.rgb(200, 200, 200));
+        this.chart.setData(data);
 
         this.chart.invalidate();
     }
@@ -195,20 +204,58 @@ public class MainActivity extends ActionBarActivity implements DiscardItemFragme
             return null;
         }
 
-        Map<Integer,Integer> countByDate = this.db.getDiscardEventCountByDay( round );
+        LinkedHashMap<Integer,Integer> countByDate = this.db.getDiscardEventCountByDay( round );
 
         if( countByDate == null || countByDate.isEmpty() ) {
             return null;
         }
 
+        // Insert zeros between entries more than one day apart
+        List<Integer> days = new ArrayList<>();
+
+        int prevDay = -1;
+
+        for( Integer day : countByDate.keySet() ) {
+
+            if( prevDay == -1 ) {
+                prevDay = day;
+                days.add( day );
+                continue;
+            }
+
+            int daysElapsed = Math.abs( day - prevDay );
+
+            for( int i = 1; i < daysElapsed; i++ ) {
+                days.add(prevDay + i );
+            }
+
+            days.add( day );
+            prevDay = day;
+        }
+
         ArrayList<Entry> entries = new ArrayList<>();
 
+        for( int day : days ) {
+
+            if( countByDate.containsKey( day )) {
+                Log.i( TAG, "Count: " + day + " " + countByDate.get( day ));
+                entries.add( new Entry( countByDate.get( day ), day ));
+            } else {
+                Log.i( TAG, "Count: " + day + " force 0" );
+                entries.add( new Entry( 0, day ));
+            }
+        }
+
+
+
+
+       /*
         for( Map.Entry<Integer,Integer> kv : countByDate.entrySet() ) {
 
             Log.i(TAG, "Discard: " + kv.getKey() + " -> " + kv.getValue());
             entries.add( new Entry( kv.getValue(), kv.getKey()) ); // Value, x-axis
         }
-
+*/
         LineDataSet discardedDataSet = new LineDataSet(entries, "Discarded");
         discardedDataSet.setColor(Color.rgb(60, 200, 255));
         discardedDataSet.setLineWidth(2);
@@ -331,7 +378,7 @@ public class MainActivity extends ActionBarActivity implements DiscardItemFragme
         ft.replace(R.id.your_placeholder, new DoneRoundFragment() );
         ft.commit();
 
-        updateStatusText( Round.Status.DONE );
+        updateStatusText(Round.Status.DONE);
     }
 
     public void clearAll() {
@@ -475,7 +522,7 @@ public class MainActivity extends ActionBarActivity implements DiscardItemFragme
 
     public void toSettings() {
         Intent intent = new Intent( this, SettingsActivity.class );
-        startActivity( intent );
+        startActivity(intent);
     }
 
     public void toStartRound( View view ) {
@@ -515,7 +562,7 @@ public class MainActivity extends ActionBarActivity implements DiscardItemFragme
         if( this.currentRound == null ) {
             throw new IllegalStateException( "Current round is null." );
         }
-        new DiscardItemTask().execute( false );
+        new DiscardItemTask().execute(false);
     }
 
 
