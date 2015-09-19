@@ -234,12 +234,12 @@ public class DBHelper extends SQLiteOpenHelper {
     }
 
 
-    public Map<Integer,Integer> getDiscardEventCountByDay( Round r ) {
+    public LinkedHashMap<Integer,Integer> getDiscardEventCountByDay( Round r ) {
         SQLiteDatabase db = this.getReadableDatabase();
 
         String sql = "SELECT cast(julianday(datetime( d.date / 1000, 'unixepoch', 'localtime' )) - julianday( datetime( r.start_date / 1000, 'unixepoch', 'localtime' )) AS INTEGER) AS round_day, COUNT(*) count FROM  discard_event d INNER JOIN cleanup_round  r  ON r.id=? AND d.round_id=r.id GROUP BY round_day";
 
-        Map<Integer,Integer> countByDay = new LinkedHashMap<>();
+        LinkedHashMap<Integer,Integer> countByDay = new LinkedHashMap<>();
 
         Cursor c = db.rawQuery( sql, new String[] { Integer.toString( r.getRoundId() )});
 Log.i( TAG, sql + " " + Integer.toString( r.getRoundId()));
