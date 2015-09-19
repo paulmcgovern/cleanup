@@ -102,7 +102,8 @@ public class DBHelper extends SQLiteOpenHelper {
         SQLiteDatabase db = this.getReadableDatabase();
         Cursor c = db.rawQuery(sql, null);
 
-
+Log.i( TAG, sql );
+Log.i( TAG, "Count:" + c.getCount() );
         if( c.getCount() >= 1 &&  c.moveToFirst() ) {
             r.setRoundId(c.getInt(0));
             r.setStartDate(c.getLong(1));

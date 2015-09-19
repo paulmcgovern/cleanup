@@ -1,7 +1,10 @@
 package ca.pmcgovern.cleanup;
 
+import android.app.AlarmManager;
 import android.app.AlertDialog;
-import android.database.sqlite.SQLiteDatabase;
+import android.app.NotificationManager;
+import android.app.PendingIntent;
+import android.content.Context;
 import android.graphics.Paint;
 import android.os.AsyncTask;
 import android.support.v4.app.Fragment;
@@ -11,6 +14,7 @@ import android.content.SharedPreferences;
 import android.graphics.Color;
 import android.preference.PreferenceManager;
 import android.support.v4.app.FragmentTransaction;
+import android.support.v4.app.NotificationCompat;
 import android.support.v7.app.ActionBarActivity;
 import android.os.Bundle;
 import android.util.Log;
@@ -33,11 +37,13 @@ import com.github.mikephil.charting.utils.ValueFormatter;
 import net.danlew.android.joda.JodaTimeAndroid;
 
 import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Date;
 import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
+import ca.pmcgovern.cleanup.receiver.AlarmReceiver;
 import ca.pmcgovern.cleanup.model.DBHelper;
 import ca.pmcgovern.cleanup.model.DiscardEvent;
 import ca.pmcgovern.cleanup.model.Round;
@@ -96,6 +102,7 @@ public class MainActivity extends ActionBarActivity implements DiscardItemFragme
         updateStatusText(roundState);
 
     }
+
 
 
     public int getDiscardedTotal() {
@@ -219,7 +226,7 @@ public class MainActivity extends ActionBarActivity implements DiscardItemFragme
             int daysElapsed = Math.abs( day - prevDay );
 
             for( int i = 1; i < daysElapsed; i++ ) {
-                days.add( prevDay + i );
+                days.add(prevDay + i );
             }
 
             days.add( day );

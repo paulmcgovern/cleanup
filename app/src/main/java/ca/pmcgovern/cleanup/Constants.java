@@ -17,5 +17,7 @@ public class Constants {
    // public static final int ROUND_STATE_SUSPENDED = 4;
   //  public static final String CURRENT_ROUND_DAYS = "currentRoundDays";
     public static final int DEFAULT_DAY_COUNT = 21;
+    public static final String REMINDERS_ENABLED = "reminders_enabled";
+
     private Constants(){}
 }

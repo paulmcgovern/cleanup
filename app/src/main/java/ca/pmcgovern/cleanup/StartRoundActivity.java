@@ -1,5 +1,8 @@
 package ca.pmcgovern.cleanup;
 
+import android.app.AlarmManager;
+import android.app.PendingIntent;
+import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.preference.PreferenceManager;
@@ -9,12 +12,15 @@ import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.CheckBox;
 import android.widget.Spinner;
 
+import java.util.Calendar;
 import java.util.Date;
 
 import ca.pmcgovern.cleanup.model.DBHelper;
 import ca.pmcgovern.cleanup.model.Round;
+import ca.pmcgovern.cleanup.receiver.AlarmReceiver;
 
 public class StartRoundActivity extends ActionBarActivity {
 
@@ -67,6 +73,18 @@ public class StartRoundActivity extends ActionBarActivity {
         SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getBaseContext());
         SharedPreferences.Editor editor = prefs.edit();
 
+        CheckBox reminderCkbx = (CheckBox)findViewById( R.id.reminderEnable );
+
+        boolean remindersEnabled = reminderCkbx.isChecked();
+
+        if( remindersEnabled ) {
+            editor.putBoolean( Constants.REMINDERS_ENABLED, true );
+            Log.i( TAG, "Reminders enabled." );
+        } else {
+            editor.putBoolean( Constants.REMINDERS_ENABLED, false );
+            Log.i( TAG, "Reminders disabled." );
+        }
+
 
         Spinner durationSelect = (Spinner)findViewById( R.id.dayCount );
 
@@ -89,9 +107,32 @@ public class StartRoundActivity extends ActionBarActivity {
 
         editor.commit();
 
+        // If reminders have been enabled kick off the first alarm
+        if( remindersEnabled ) {
+            initReminderAlarm();
+        }
+
         Intent intent = new Intent( this, MainActivity.class );
         startActivity( intent );
     }
 
+    private void initReminderAlarm() {
 
+
+        // TODO: calculate reminder time with Jodatime: 2 hrs from round start.
+
+        Calendar updateTime = Calendar.getInstance();
+
+        updateTime.add( Calendar.MINUTE, 2 );
+
+        Log.i(TAG, "Alarm at " + new Date( updateTime.getTimeInMillis()) );
+        Log.i( TAG, "setting alarm...." );
+        Intent downloader = new Intent(this, AlarmReceiver.class);
+
+        PendingIntent recurringDownload = PendingIntent.getBroadcast(this,0, downloader, PendingIntent.FLAG_CANCEL_CURRENT);
+        AlarmManager alarms = (AlarmManager) this.getSystemService(Context.ALARM_SERVICE);
+
+        // TODO: set in window
+        alarms.set(AlarmManager.RTC, updateTime.getTimeInMillis(), recurringDownload);
+    }
 }
