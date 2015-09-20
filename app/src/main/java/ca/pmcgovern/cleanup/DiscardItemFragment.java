@@ -17,6 +17,7 @@ import java.util.concurrent.TimeUnit;
 
 import ca.pmcgovern.cleanup.model.DBHelper;
 import ca.pmcgovern.cleanup.model.Round;
+import ca.pmcgovern.cleanup.util.RoundUtilities;
 
 
 public class DiscardItemFragment extends Fragment {
@@ -59,11 +60,9 @@ public class DiscardItemFragment extends Fragment {
         // TODO: get cound of items we've missed.
         t.setText("Today: " + discardedToday + " / " +  daysElapsed );
 
-
         t = (TextView)view.findViewById( R.id.totals );
 
-        int roundDuration = currentRound.getDurationDays();
-        long roundTargetItems = ( roundDuration * (  roundDuration + 1 ))/2;
+        long roundTargetItems = RoundUtilities.getRoundTargetItems( currentRound.getDurationDays() );
 
         t.setText( "Round: " + discardedTotal + " / " + roundTargetItems );
     }

@@ -48,6 +48,7 @@ import ca.pmcgovern.cleanup.model.DBHelper;
 import ca.pmcgovern.cleanup.model.DiscardEvent;
 import ca.pmcgovern.cleanup.model.Round;
 import ca.pmcgovern.cleanup.util.IntegerValueFormatter;
+import ca.pmcgovern.cleanup.util.RoundUtilities;
 
 
 public class MainActivity extends ActionBarActivity implements DiscardItemFragment.RoundProvider {
@@ -313,17 +314,29 @@ public class MainActivity extends ActionBarActivity implements DiscardItemFragme
         if( roundState == Round.Status.NEW ) {
 
             menu.findItem( R.id.action_stop ).setVisible( false );
-            menu.findItem( R.id.action_clear ).setVisible(false);
+            menu.findItem( R.id.enable_reminders ).setVisible( false );
+            menu.findItem( R.id.disable_reminders ).setVisible( false );
 
         } else if ( roundState == Round.Status.IN_PROGRESS ) {
 
             menu.findItem( R.id.action_stop ).setVisible( true );
-            menu.findItem( R.id.action_clear ).setVisible(true);
+
+            SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getBaseContext());
+
+            if( prefs.getBoolean( Constants.REMINDERS_ENABLED, true )) {
+                menu.findItem( R.id.enable_reminders ).setVisible( false );
+                menu.findItem( R.id.disable_reminders ).setVisible( true );
+            } else {
+                menu.findItem( R.id.enable_reminders ).setVisible( true );
+                menu.findItem( R.id.disable_reminders ).setVisible( false );
+            }
+
 
         } else if( roundState == Round.Status.DONE ) {
 
             menu.findItem( R.id.action_stop ).setVisible( false );
-            menu.findItem( R.id.action_clear ).setVisible(true);
+            menu.findItem( R.id.enable_reminders ).setVisible( false );
+            menu.findItem( R.id.disable_reminders ).setVisible( false );
         }
 
         return true;
@@ -346,8 +359,14 @@ public class MainActivity extends ActionBarActivity implements DiscardItemFragme
         } else if( id == R.id.action_stop ) {
             stopRoundAlert();
             return true;
-        } else if( id == R.id.action_clear ) {
-            clearAllAlert();
+        } else if( id == R.id.enable_reminders ) {
+            enableReminders();
+            return true;
+        } else if( id == R.id.disable_reminders ) {
+            disableReminders();
+            return true;
+        } else if ( id == R.id.action_start_over ) {
+            startOverAlert();
             return true;
         }
 
@@ -378,39 +397,103 @@ public class MainActivity extends ActionBarActivity implements DiscardItemFragme
         ft.replace(R.id.your_placeholder, new DoneRoundFragment() );
         ft.commit();
 
+        // TODO: clear alarms and notifications
+        cancelCurrentReminders();
+
+
         updateStatusText(Round.Status.DONE);
     }
 
-    public void clearAll() {
 
-        // Wipe preferences
+    private void enableReminders() {
+
         SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getBaseContext());
         SharedPreferences.Editor editor = prefs.edit();
-        editor.clear();
+
+        editor.putBoolean( Constants.REMINDERS_ENABLED, true );
+
         editor.commit();
 
+        // TODO: calculate reminder time with Jodatime: 2 hrs from round start.
+
+        Calendar updateTime = Calendar.getInstance();
+
+        // TODO: calculate reminder time
+        updateTime.add(Calendar.MINUTE, 2);
+
+        Log.i(TAG, "Alarm at " + new Date( updateTime.getTimeInMillis()) );
+        Log.i( TAG, "setting alarm...." );
+
+        Intent reminderIntent = new Intent(this, AlarmReceiver.class);
+
+        PendingIntent reminder = PendingIntent.getBroadcast(this, 0, reminderIntent, PendingIntent.FLAG_CANCEL_CURRENT);
+        AlarmManager alarms = (AlarmManager) this.getSystemService(Context.ALARM_SERVICE);
+
+        // TODO: set in window
+        alarms.set(AlarmManager.RTC, updateTime.getTimeInMillis(), reminder);
+
+        invalidateOptionsMenu();
+        Log.i( TAG, "Reminders enabled." );
+    }
+
+    private void disableReminders() {
+
+        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getBaseContext());
+        SharedPreferences.Editor editor = prefs.edit();
+
+        editor.putBoolean(Constants.REMINDERS_ENABLED, false);
+        editor.commit();
+
+        cancelCurrentReminders();
+        invalidateOptionsMenu();
+        Log.i( TAG, "Reminders disabled." );
+    }
+
+
+    /** Clear current state and go to start round activity */
+    public void startOver() {
+
         // Wipe DB
-       // DBHelper db = new DBHelper( this );
-       this.db.clearAll();
+        // DBHelper db = new DBHelper( this );
+        this.db.clearAll();
 
         // reset app state
         this.currentRound = null;
 
-        invalidateOptionsMenu();
+      //  invalidateOptionsMenu();
 
-        FragmentTransaction ft = getSupportFragmentManager().beginTransaction();
-        ft.replace(R.id.your_placeholder, new GetStartedFragment() );
-        ft.commit();
+       // FragmentTransaction ft = getSupportFragmentManager().beginTransaction();
+       // ft.replace(R.id.your_placeholder, new GetStartedFragment());
+       // ft.commit();
 
-        updateStatusText(Round.Status.NEW);
+        cancelCurrentReminders();
+
+       // updateStatusText(Round.Status.NEW);
+
+        Intent intent = new Intent( this, StartRoundActivity.class );
+        startActivity(intent);
     }
 
 
 
+    /**
+     * Cancel notifications and alarms
+     */
+    private void cancelCurrentReminders() {
+
+        NotificationManager mNotifyMgr = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
+        mNotifyMgr.cancel(Constants.REMINDER_NOTIFICATION_ID);
+
+        Intent downloader = new Intent( this, AlarmReceiver.class );
+        PendingIntent notificationAlarm = PendingIntent.getBroadcast(this, 0, downloader, PendingIntent.FLAG_CANCEL_CURRENT);
+        AlarmManager alarms = (AlarmManager) this.getSystemService( Context.ALARM_SERVICE );
+
+        alarms.cancel(notificationAlarm);
+    }
 
     public void updateStatusText( Round.Status roundState ) {
 
-        TextView statusText = (TextView)findViewById( R.id.statusText );
+        TextView statusText = (TextView)findViewById(R.id.statusText);
 
         if( statusText == null ) {
             throw new IllegalArgumentException( "Failed to find status text view" );
@@ -427,9 +510,9 @@ public class MainActivity extends ActionBarActivity implements DiscardItemFragme
 
         //SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getBaseContext());
 
-        long roundStartTime = this.currentRound.getStartDate();//prefs.getLong(Constants.CURRENT_ROUND_START_DATE, System.currentTimeMillis());
+        long roundStartTime = this.currentRound.getStartDate();
 
-        long roundDuration = this.currentRound.getDurationDays(); //prefs.getInt(Constants.CURRENT_ROUND_DAYS, Constants.DEFAULT_DAY_COUNT);
+        long roundDuration = this.currentRound.getDurationDays();
 
         // TODO: Jodatime instead
         long daysElapsed = 1 + TimeUnit.DAYS.convert( System.currentTimeMillis() - roundStartTime, TimeUnit.MILLISECONDS );
@@ -440,7 +523,7 @@ public class MainActivity extends ActionBarActivity implements DiscardItemFragme
         if ( roundState == Round.Status.IN_PROGRESS ) {
 
 
-            long roundTargetItems = (roundDuration * (  roundDuration + 1 ))/2;
+            long roundTargetItems = RoundUtilities.getRoundTargetItems( roundDuration );
 
             statusText.setText( "Round started. Day " + daysElapsed + " of " + roundDuration  + ". Target for round:" + roundTargetItems );
 
@@ -477,8 +560,8 @@ public class MainActivity extends ActionBarActivity implements DiscardItemFragme
                         MainActivity.this.stopRound();
                     }
                 })
-                .setNegativeButton("No",new DialogInterface.OnClickListener() {
-                    public void onClick(DialogInterface dialog,int id) {
+                .setNegativeButton("No", new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialog, int id) {
                         dialog.cancel();
                     }
                 });
@@ -490,18 +573,17 @@ public class MainActivity extends ActionBarActivity implements DiscardItemFragme
 
 
 
-
-    public void clearAllAlert() {
+    public void startOverAlert() {
 
         AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder( this );
-        alertDialogBuilder.setTitle( "Clear All Data" );
+        alertDialogBuilder.setTitle("Start Over");
 
         alertDialogBuilder
                 .setMessage("Clear all data and start over?")
                 .setCancelable(false)
                 .setPositiveButton("Yes",new DialogInterface.OnClickListener() {
                     public void onClick(DialogInterface dialog,int id) {
-                        MainActivity.this.clearAll();
+                        MainActivity.this.startOver();
                     }
                 })
                 .setNegativeButton("No",new DialogInterface.OnClickListener() {

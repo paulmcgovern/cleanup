@@ -1,6 +1,7 @@
 package ca.pmcgovern.cleanup;
 
 import android.app.AlarmManager;
+import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
@@ -107,6 +108,9 @@ public class StartRoundActivity extends ActionBarActivity {
 
         editor.commit();
 
+        // Kill any outstanding notifications.
+        cancelCurrentReminders();
+
         // If reminders have been enabled kick off the first alarm
         if( remindersEnabled ) {
             initReminderAlarm();
@@ -114,6 +118,19 @@ public class StartRoundActivity extends ActionBarActivity {
 
         Intent intent = new Intent( this, MainActivity.class );
         startActivity( intent );
+    }
+
+
+    private void cancelCurrentReminders() {
+
+        NotificationManager mNotifyMgr = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
+        mNotifyMgr.cancel( Constants.REMINDER_NOTIFICATION_ID );
+
+        Intent downloader = new Intent( this, AlarmReceiver.class );
+        PendingIntent notificationAlarm = PendingIntent.getBroadcast( this,0, downloader, PendingIntent.FLAG_CANCEL_CURRENT );
+        AlarmManager alarms = (AlarmManager) this.getSystemService( Context.ALARM_SERVICE );
+
+        alarms.cancel( notificationAlarm );
     }
 
     private void initReminderAlarm() {
