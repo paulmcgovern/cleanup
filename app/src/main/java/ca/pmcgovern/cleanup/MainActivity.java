@@ -211,12 +211,36 @@ public class MainActivity extends ActionBarActivity implements DiscardItemFragme
             return null;
         }
 
+
+        int currentDay = RoundUtilities.getCurrentDayInRound( this.currentRound );
+
+        if( currentDay < 0 ) {
+            currentDay = this.currentRound.getDurationDays();
+        }
+
+        ArrayList<Entry> entries = new ArrayList<>();
+Log.i( TAG, "Count by date: " + countByDate );
+        for( int day = 0; day <= currentDay; day++ ) {
+
+            if( countByDate.containsKey( day )) {
+                Log.i( TAG, "Count: " + day + " " + countByDate.get( day ));
+                entries.add( new Entry( countByDate.get( day ), day ));
+            } else {
+                Log.i( TAG, "Count: " + day + " force 0" );
+                entries.add( new Entry( 0, day ));
+            }
+        }
+
+
+/**
+
         // Insert zeros between entries more than one day apart
         List<Integer> days = new ArrayList<>();
 
         int prevDay = -1;
 
-        for( Integer day : countByDate.keySet() ) {
+       // for( Integer day : countByDate.keySet() ) {
+        for( int day = 0; day < currentDay; day++ ) {
 
             if( prevDay == -1 ) {
                 prevDay = day;
@@ -234,7 +258,7 @@ public class MainActivity extends ActionBarActivity implements DiscardItemFragme
             prevDay = day;
         }
 
-        ArrayList<Entry> entries = new ArrayList<>();
+
 
         for( int day : days ) {
 
@@ -247,7 +271,7 @@ public class MainActivity extends ActionBarActivity implements DiscardItemFragme
             }
         }
 
-
+*/
 
 
        /*
@@ -422,7 +446,7 @@ public class MainActivity extends ActionBarActivity implements DiscardItemFragme
         updateTime.add(Calendar.MINUTE, 2);
 
         Log.i(TAG, "Alarm at " + new Date( updateTime.getTimeInMillis()) );
-        Log.i( TAG, "setting alarm...." );
+        Log.i(TAG, "setting alarm....");
 
         Intent reminderIntent = new Intent(this, AlarmReceiver.class);
 
