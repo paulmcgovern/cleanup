@@ -31,6 +31,19 @@ public class StartRoundActivity extends ActionBarActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_start_round);
+
+        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getBaseContext());
+
+        CheckBox reminderCkbx = (CheckBox)findViewById( R.id.reminderEnable );
+
+        Log.i( TAG, "Reminders enabled:" +  prefs.getBoolean( Constants.REMINDERS_ENABLED, false ));
+
+        if( prefs.getBoolean( Constants.REMINDERS_ENABLED, false )) {
+            reminderCkbx.setChecked( true );
+        } else {
+            reminderCkbx.setChecked( false );
+        }
+
     }
 
     @Override
@@ -117,7 +130,9 @@ public class StartRoundActivity extends ActionBarActivity {
         }
 
         Intent intent = new Intent( this, MainActivity.class );
+        intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_NEW_TASK);
         startActivity( intent );
+        finish();
     }
 
 
