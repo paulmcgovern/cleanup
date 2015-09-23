@@ -48,7 +48,6 @@
         android:layout_height="wrap_content"
         android:text="Enable Reminders"
         android:id="@+id/reminderEnable"
-        android:checked="true"
         android:layout_weight="0.14"
         android:layout_gravity="center_horizontal" />
 
