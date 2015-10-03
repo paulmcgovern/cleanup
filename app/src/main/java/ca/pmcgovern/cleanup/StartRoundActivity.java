@@ -46,6 +46,21 @@ public class StartRoundActivity extends ActionBarActivity {
 
     }
 
+
+    @Override
+    protected void onStart() {
+
+        Log.e( TAG, "on start..." );
+        super.onStart();
+    }
+
+    @Override
+    protected void onResume() {
+        Log.e( TAG, "on resume..." );
+        super.onResume();
+    }
+
+
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         // Inflate the menu; this adds items to the action bar if it is present.

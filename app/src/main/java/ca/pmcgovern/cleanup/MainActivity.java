@@ -63,6 +63,8 @@ public class MainActivity extends ActionBarActivity implements DiscardItemFragme
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        Log.e(TAG, "on resume...");
         setContentView(R.layout.activity_main);
 
         JodaTimeAndroid.init(this);
@@ -79,14 +81,12 @@ public class MainActivity extends ActionBarActivity implements DiscardItemFragme
 
 
         this.chart = (LineChart)findViewById( R.id.chart);
-        this.chart.setTouchEnabled( false );
-        this.chart.setBackgroundColor( Color.BLACK );
-        //LineChart chart = (LineChart) findViewById(R.id.chart);
+        this.chart.setTouchEnabled(false);
+        this.chart.setBackgroundColor(Color.BLACK);
 
-//        int count = 21;
-        initChart();
+ //       initChart();
 
-
+/*
         Round.Status roundState = Round.Status.NEW;
 
         if( this.currentRound != null ) {
@@ -98,12 +98,41 @@ public class MainActivity extends ActionBarActivity implements DiscardItemFragme
             Log.i(TAG, "ROUND COMPLETE: " + (this.currentRound.getStatus() == Round.Status.DONE));
         }
 
-        setupFragments( roundState );
-
-        updateStatusText(roundState);
+        setupFragments(roundState);
+*/
+//        updateStatusText(roundState);
 
     }
 
+    @Override
+    protected void onResume() {
+
+        Log.e( TAG, "on start..." );
+        super.onResume();
+    }
+
+    @Override
+    protected void onStart() {
+        Log.e( TAG, "on resume..." );
+
+        Round.Status roundState = Round.Status.NEW;
+
+        if( this.currentRound != null ) {
+
+            this.roundTotal = this.db.getDiscardedTotal(this.currentRound.getRoundId());
+
+            roundState = this.currentRound.getStatus();
+
+            Log.i(TAG, "ROUND COMPLETE: " + (this.currentRound.getStatus() == Round.Status.DONE));
+        }
+
+        setupFragments( roundState );
+
+        initChart();
+        updateStatusText( roundState );
+
+        super.onStart();
+    }
 
 
     public int getDiscardedTotal() {
@@ -313,7 +342,7 @@ Log.i( TAG, "Count by date: " + countByDate );
         }
 
         ft.replace(R.id.your_placeholder, newFragment);
-        ft.commit();
+        ft.commitAllowingStateLoss();
     }
 
 

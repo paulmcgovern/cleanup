@@ -4,6 +4,7 @@ import android.support.v7.app.ActionBarActivity;
 import android.os.Bundle;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.webkit.WebView;
 
 public class HelpActivity extends ActionBarActivity {
 
@@ -11,6 +12,12 @@ public class HelpActivity extends ActionBarActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_help);
+
+        WebView content = (WebView)findViewById( R.id.helpContent);
+
+
+
+        content.loadUrl("file:///android_asset/help.html");
     }
 
     @Override
