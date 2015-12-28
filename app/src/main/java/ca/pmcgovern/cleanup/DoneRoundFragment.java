@@ -38,12 +38,12 @@ public class DoneRoundFragment extends DiscardItemFragment {
 
         NumberFormat pcformat = NumberFormat.getPercentInstance();
         pcformat.setMinimumFractionDigits( 1 );
-        pcformat.setMaximumFractionDigits( 1 );
+        pcformat.setMaximumFractionDigits(1);
 
         TextView t = (TextView)view.findViewById( R.id.totals );
-        t.setText(discardedTotal + " / " + roundTargetItems );
+        t.setText( "Discarded " + discardedTotal + " of " + roundTargetItems + " items.");
 
         t = (TextView)view.findViewById( R.id.percent );
-        t.setText( pcformat.format( pc ) );
+        t.setText( pcformat.format( pc ) + " complete");
     }
 }
