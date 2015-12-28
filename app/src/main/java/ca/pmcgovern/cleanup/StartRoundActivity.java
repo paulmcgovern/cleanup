@@ -36,7 +36,7 @@ public class StartRoundActivity extends ActionBarActivity {
 
         CheckBox reminderCkbx = (CheckBox)findViewById( R.id.reminderEnable );
 
-        Log.i( TAG, "Reminders enabled:" +  prefs.getBoolean( Constants.REMINDERS_ENABLED, false ));
+        Log.i(TAG, "Reminders enabled:" + prefs.getBoolean(Constants.REMINDERS_ENABLED, false));
 
         if( prefs.getBoolean( Constants.REMINDERS_ENABLED, false )) {
             reminderCkbx.setChecked( true );
@@ -50,7 +50,7 @@ public class StartRoundActivity extends ActionBarActivity {
     @Override
     protected void onStart() {
 
-        Log.e( TAG, "on start..." );
+        Log.e(TAG, "on start...");
         super.onStart();
     }
 
@@ -70,13 +70,11 @@ public class StartRoundActivity extends ActionBarActivity {
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
-        // Handle action bar item clicks here. The action bar will
-        // automatically handle clicks on the Home/Up button, so long
-        // as you specify a parent activity in AndroidManifest.xml.
+
         int id = item.getItemId();
 
-        //noinspection SimplifiableIfStatement
-        if (id == R.id.action_settings) {
+        if (id == R.id.action_help) {
+            toHelp();
             return true;
         }
 
@@ -154,13 +152,13 @@ public class StartRoundActivity extends ActionBarActivity {
     private void cancelCurrentReminders() {
 
         NotificationManager mNotifyMgr = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
-        mNotifyMgr.cancel( Constants.REMINDER_NOTIFICATION_ID );
+        mNotifyMgr.cancel(Constants.REMINDER_NOTIFICATION_ID);
 
         Intent downloader = new Intent( this, AlarmReceiver.class );
         PendingIntent notificationAlarm = PendingIntent.getBroadcast( this,0, downloader, PendingIntent.FLAG_CANCEL_CURRENT );
         AlarmManager alarms = (AlarmManager) this.getSystemService( Context.ALARM_SERVICE );
 
-        alarms.cancel( notificationAlarm );
+        alarms.cancel(notificationAlarm);
     }
 
     private void initReminderAlarm() {
@@ -173,7 +171,7 @@ public class StartRoundActivity extends ActionBarActivity {
         updateTime.add( Calendar.MINUTE, 2 );
 
         Log.i(TAG, "Alarm at " + new Date( updateTime.getTimeInMillis()) );
-        Log.i( TAG, "setting alarm...." );
+        Log.i(TAG, "setting alarm....");
         Intent downloader = new Intent(this, AlarmReceiver.class);
 
         PendingIntent recurringDownload = PendingIntent.getBroadcast(this,0, downloader, PendingIntent.FLAG_CANCEL_CURRENT);
@@ -181,5 +179,10 @@ public class StartRoundActivity extends ActionBarActivity {
 
         // TODO: set in window
         alarms.set(AlarmManager.RTC, updateTime.getTimeInMillis(), recurringDownload);
+    }
+
+    public void toHelp() {
+        Intent intent = new Intent( this, HelpActivity.class );
+        startActivity(intent);
     }
 }

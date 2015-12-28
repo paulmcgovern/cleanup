@@ -15,9 +15,11 @@ public class HelpActivity extends ActionBarActivity {
 
         WebView content = (WebView)findViewById( R.id.helpContent);
 
-
-
         content.loadUrl("file:///android_asset/help.html");
+
+        // Get bg to transparent
+        content.setBackgroundColor(0);
+
     }
 
     @Override
