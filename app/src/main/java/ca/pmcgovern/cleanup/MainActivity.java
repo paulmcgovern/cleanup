@@ -84,30 +84,12 @@ public class MainActivity extends ActionBarActivity implements DiscardItemFragme
         this.chart.setTouchEnabled(false);
         this.chart.setBackgroundColor(Color.BLACK);
 
- //       initChart();
-
-/*
-        Round.Status roundState = Round.Status.NEW;
-
-        if( this.currentRound != null ) {
-
-            this.roundTotal = this.db.getDiscardedTotal(this.currentRound.getRoundId());
-
-           roundState = this.currentRound.getStatus();
-
-            Log.i(TAG, "ROUND COMPLETE: " + (this.currentRound.getStatus() == Round.Status.DONE));
-        }
-
-        setupFragments(roundState);
-*/
-//        updateStatusText(roundState);
-
     }
 
     @Override
     protected void onResume() {
 
-        Log.e( TAG, "on start..." );
+        Log.e(TAG, "on resume...");
         super.onResume();
     }
 
@@ -207,7 +189,7 @@ public class MainActivity extends ActionBarActivity implements DiscardItemFragme
             roundDuration = this.currentRound.getDurationDays();
         }
 
-        ArrayList<Entry> entries = new ArrayList<Entry>();
+        ArrayList<Entry> entries = new ArrayList<>();
 
         Log.i(TAG, "Generating quota data for " + roundDuration + " days");
         for (int day = 0; day < roundDuration; day++) {
@@ -240,76 +222,16 @@ public class MainActivity extends ActionBarActivity implements DiscardItemFragme
             return null;
         }
 
+        List<Entry> entries = new ArrayList<>();
 
-        int currentDay = RoundUtilities.getCurrentDayInRound( this.currentRound );
+        for( Integer day : countByDate.keySet() ) {
 
-        if( currentDay < 0 ) {
-            currentDay = this.currentRound.getDurationDays();
+            int count = countByDate.get( day );
+
+            Log.i( TAG, "Entry day: " + day + " count:"+ count );
+            entries.add( new Entry( count, day ));
         }
 
-        ArrayList<Entry> entries = new ArrayList<>();
-Log.i( TAG, "Count by date: " + countByDate );
-        for( int day = 0; day <= currentDay; day++ ) {
-
-            if( countByDate.containsKey( day )) {
-                Log.i( TAG, "Count: " + day + " " + countByDate.get( day ));
-                entries.add( new Entry( countByDate.get( day ), day ));
-            } else {
-                Log.i( TAG, "Count: " + day + " force 0" );
-                entries.add( new Entry( 0, day ));
-            }
-        }
-
-
-/**
-
-        // Insert zeros between entries more than one day apart
-        List<Integer> days = new ArrayList<>();
-
-        int prevDay = -1;
-
-       // for( Integer day : countByDate.keySet() ) {
-        for( int day = 0; day < currentDay; day++ ) {
-
-            if( prevDay == -1 ) {
-                prevDay = day;
-                days.add( day );
-                continue;
-            }
-
-            int daysElapsed = Math.abs( day - prevDay );
-
-            for( int i = 1; i < daysElapsed; i++ ) {
-                days.add(prevDay + i );
-            }
-
-            days.add( day );
-            prevDay = day;
-        }
-
-
-
-        for( int day : days ) {
-
-            if( countByDate.containsKey( day )) {
-                Log.i( TAG, "Count: " + day + " " + countByDate.get( day ));
-                entries.add( new Entry( countByDate.get( day ), day ));
-            } else {
-                Log.i( TAG, "Count: " + day + " force 0" );
-                entries.add( new Entry( 0, day ));
-            }
-        }
-
-*/
-
-
-       /*
-        for( Map.Entry<Integer,Integer> kv : countByDate.entrySet() ) {
-
-            Log.i(TAG, "Discard: " + kv.getKey() + " -> " + kv.getValue());
-            entries.add( new Entry( kv.getValue(), kv.getKey()) ); // Value, x-axis
-        }
-*/
         LineDataSet discardedDataSet = new LineDataSet(entries, "Discarded");
         discardedDataSet.setColor(Color.rgb(60, 200, 255));
         discardedDataSet.setLineWidth(2);
@@ -734,7 +656,7 @@ Log.i( TAG, "Count by date: " + countByDate );
                 DiscardEvent de = new DiscardEvent();
                 de.setRoundId(MainActivity.this.currentRound.getRoundId());
                 de.setDiscardDate(System.currentTimeMillis());
-                this.db.saveDiscardEvent(de);
+                this.db.saveDiscardEvent(MainActivity.this.currentRound, de);
 
             } else {
 
