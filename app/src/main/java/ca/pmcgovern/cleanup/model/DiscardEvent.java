@@ -1,17 +1,26 @@
 package ca.pmcgovern.cleanup.model;
 
+import android.util.Log;
+
 /**
  * Created by mcgovern on 8/22/15.
  */
 public class DiscardEvent {
-    private int roundId;
+    private long roundId;
     private long discardDate;
 
-    public int getRoundId() {
+
+    public DiscardEvent() {
+        this.discardDate = System.currentTimeMillis();
+    }
+
+    public long getRoundId()
+    {
         return roundId;
     }
 
-    public void setRoundId(int roundId) {
+    public void setRoundId(long roundId) {
+
         this.roundId = roundId;
     }
 

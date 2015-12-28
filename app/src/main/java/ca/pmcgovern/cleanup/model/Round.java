@@ -20,9 +20,15 @@ public class Round {
     private int roundId;
     private String name;
     private int durationDays = Constants.DEFAULT_DAY_COUNT;
-    private long startDate = System.currentTimeMillis();
+    private long startDate;
     private Status status = Status.NEW;
     boolean sendReminders;
+
+
+    public Round() {
+
+        this.setStartDate( System.currentTimeMillis() );
+    }
 
     public boolean isSendReminders() {
         return sendReminders;
@@ -52,8 +58,19 @@ public class Round {
         return startDate;
     }
 
+    /**
+     * Normalize to midnight
+     * @param startDate
+     */
     public void setStartDate(long startDate) {
-        this.startDate = startDate;
+
+        DateTime today = new DateTime( startDate )
+                .hourOfDay().setCopy( 0 )
+                .minuteOfHour().setCopy( 0 )
+                .secondOfMinute().setCopy( 0 )
+                .millisOfSecond().setCopy( 0 );
+
+        this.startDate = today.getMillis();
     }
 
     public Status getStatus() {

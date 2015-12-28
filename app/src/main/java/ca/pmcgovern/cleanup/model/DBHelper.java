@@ -7,13 +7,18 @@ import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
 import android.util.Log;
 
+import com.github.mikephil.charting.data.Entry;
+
 import org.joda.time.DateTime;
 import org.joda.time.Days;
 
+import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.LinkedHashMap;
 import java.util.Map;
+
+import ca.pmcgovern.cleanup.util.RoundUtilities;
 
 /**
  * Created by mcgovern on 8/22/15.
@@ -26,7 +31,7 @@ public class DBHelper extends SQLiteOpenHelper {
     public static final String DATABASE_NAME = "throwout.db";
 
     public DBHelper(Context context) {
-        super( context, DATABASE_NAME, null, DATABASE_VERSION );
+        super(context, DATABASE_NAME, null, DATABASE_VERSION);
     }
 
     @Override
@@ -37,7 +42,7 @@ public class DBHelper extends SQLiteOpenHelper {
         db.execSQL( sql );
 
                 sql = "CREATE TABLE DISCARD_EVENT ( ROUND_ID INTEGER NOT NULL, DATE INTEGER NOT NULL, FOREIGN KEY(ROUND_ID) REFERENCES CLEANUP_ROUND(ID) )";
-        db.execSQL( sql );
+        db.execSQL(sql);
 
         Log.i(TAG, "...Created DB OK.");
     }
@@ -86,7 +91,7 @@ public class DBHelper extends SQLiteOpenHelper {
         }
         SQLiteDatabase db = this.getWritableDatabase();
         ContentValues values = new ContentValues();
-        values.put( "STATUS", r.getStatus().toString() );
+        values.put("STATUS", r.getStatus().toString());
         db.update("CLEANUP_ROUND", values, "ID=?", new String[]{Integer.toString(r.getRoundId())});
       //  db.close();
     }
@@ -104,8 +109,11 @@ public class DBHelper extends SQLiteOpenHelper {
 
 Log.i( TAG, sql );
 Log.i( TAG, "Count:" + c.getCount() );
+//Log.i( TAG, "Got ID" + c.getInt( 0 ) );
         if( c.getCount() >= 1 &&  c.moveToFirst() ) {
             r.setRoundId(c.getInt(0));
+
+            Log.i( TAG, "Got ID " + c.getInt(0));
             r.setStartDate(c.getLong(1));
             r.setDurationDays(c.getInt(2));
             //r.setStatus( Round.Status.valueOf( c.getString( 3 )));
@@ -136,29 +144,41 @@ Log.i( TAG, "Count:" + c.getCount() );
 
         int days = Days.daysBetween(start, now).getDays();
 
-        Log.i(TAG, "Delta days: " + days + " duration:" + durationDays );
+        Log.i(TAG, "Delta days: " + days + " duration:" + durationDays);
 
         return days > durationDays;
 
     }
 
-    public void saveDiscardEvent( DiscardEvent de ) {
+    public void saveDiscardEvent( Round round, DiscardEvent de ) {
 
         if( de == null ) {
             throw new IllegalArgumentException( "DiscardEvent is null" );
         }
 
-        int roundId = de.getRoundId();
+        if( round == null ) {
+            throw new IllegalArgumentException( "round is null" );
+        }
+
+
+        long roundId = round.getRoundId();
 
         if( roundId <= 0 ) {
             throw new IllegalArgumentException( "Bad round ID " + roundId  );
+        }
+
+
+        // Verify date of discard event falls
+        // within round duration
+        if( ! RoundUtilities.discardIsWithinRound(round, de)) {
+            throw new IllegalArgumentException( "Round duration violation" );
         }
 
         SQLiteDatabase db = this.getWritableDatabase();
 
         ContentValues values = new ContentValues();
         values.put( "ROUND_ID", roundId );
-        values.put( "DATE", de.getDiscardDate() == 0 ? System.currentTimeMillis() : de.getDiscardDate());
+        values.put( "DATE", de.getDiscardDate() );
 
         db.insert( "DISCARD_EVENT", null, values );
 
@@ -235,15 +255,15 @@ Log.i( TAG, "Count:" + c.getCount() );
     }
 
 
-    public LinkedHashMap<Integer,Integer> getDiscardEventCountByDay( Round r ) {
+    public LinkedHashMap<Integer,Integer> getDiscardEventCountByDay( Round round ) {
         SQLiteDatabase db = this.getReadableDatabase();
 
         String sql = "SELECT cast(julianday(datetime( d.date / 1000, 'unixepoch', 'localtime' )) - julianday( datetime( r.start_date / 1000, 'unixepoch', 'localtime' )) AS INTEGER) AS round_day, COUNT(*) count FROM  discard_event d INNER JOIN cleanup_round  r  ON r.id=? AND d.round_id=r.id GROUP BY round_day";
 
         LinkedHashMap<Integer,Integer> countByDay = new LinkedHashMap<>();
 
-        Cursor c = db.rawQuery( sql, new String[] { Integer.toString( r.getRoundId() )});
-Log.i( TAG, sql + " " + Integer.toString( r.getRoundId()));
+        Cursor c = db.rawQuery( sql, new String[] { Integer.toString(round.getRoundId())});
+Log.i( TAG, sql + " " + Integer.toString(round.getRoundId()));
         if ( c.getCount() > 0 && c.moveToFirst() ) {
             do {
 Log.i( TAG, " day:" + c.getInt(0) + " count:" + c.getInt( 1 ));
@@ -255,9 +275,30 @@ Log.i( TAG, " day:" + c.getInt(0) + " count:" + c.getInt( 1 ));
         if( !c.isClosed() ) {
             c.close();
         }
-//        db.close();
 
-        return countByDay;
+
+
+        LinkedHashMap<Integer,Integer> filledCountByDay = new LinkedHashMap<>();
+
+        // Add zeroes up to current day or end of round
+        int currentDay = RoundUtilities.getCurrentDayInRound( round );
+
+        if( currentDay < 0 ) {
+            currentDay = round.getDurationDays() - 1;
+        }
+Log.i( "TEST", "DB: currentDay in Round: " + currentDay );
+        for( int day = 0; day <= currentDay; day++ ) {
+
+            if( countByDay.containsKey( day )) {
+                filledCountByDay.put( day, countByDay.get( day ));
+            } else {
+                filledCountByDay.put( day, 0 );
+            }
+        }
+Log.i( TAG, "Filled countByDay:" + filledCountByDay );
+ Log.i( TAG, "Current day: " + currentDay );
+Log.i( TAG, "Round duration: "+ round.getDurationDays() );
+        return filledCountByDay;
     }
 
 }
